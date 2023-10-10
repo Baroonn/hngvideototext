@@ -6,8 +6,10 @@ import time
 import os
 from pathlib import Path
 
-root = "/home"
-print("Current Directory: " + os.getcwd())
+root = os.environ["root"]
+logging.warning("Current Directory: " + os.getcwd())
+external = os.environ["external"]
+
 subscription_key = os.environ["speech_sub_key"]
 speech_region = "eastus"
 file_name = ""
@@ -45,11 +47,15 @@ def recognised(evt):
 def main(msg: func.QueueMessage) -> None:
     logging.info('Python queue trigger function processed a queue item: %s',
                  msg.get_body().decode('utf-8'))
+    global done
+    global results
+    done = False
+    results = list()
     message = msg.get_body().decode('utf-8')
     filename = Path(message).stem
-    video_filename = f"{root}/videos/{message}"
+    video_filename = f"{external}/videos/{message}"
     audio_filename = f"{root}/audios/{filename}.wav"
-    transcript_filename = f"{root}/transcripts/{filename}.txt"
+    transcript_filename = f"{external}/transcripts/{filename}.txt"
     video = VideoFileClip(video_filename)
     audio = video.audio
     audio.write_audiofile(audio_filename)
@@ -78,3 +84,4 @@ def main(msg: func.QueueMessage) -> None:
     with open(transcript_filename, "w") as file:
         file.write("\n".join(results))
         print("Transcription dumped")
+    os.remove(audio_filename)
